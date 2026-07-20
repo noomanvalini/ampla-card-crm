@@ -13,6 +13,7 @@ export function DbProvider({ children }) {
   const [emails, setEmails] = useState([]);
   const [faturamentos, setFaturamentos] = useState([]);
   const [bandeiras, setBandeiras] = useState([]);
+  const [estabelecimentos, setEstabelecimentos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Load and merge data from localstorage + defaultData.json
@@ -27,26 +28,21 @@ export function DbProvider({ children }) {
       const importedEmails = JSON.parse(localStorage.getItem('ampla_imported_emails') || '[]');
       const importedFaturamentos = JSON.parse(localStorage.getItem('ampla_imported_faturamentos') || '[]');
       const importedBandeiras = JSON.parse(localStorage.getItem('ampla_imported_bandeiras') || '[]');
+      const importedEstabelecimentos = JSON.parse(localStorage.getItem('ampla_imported_estabelecimentos') || '[]');
 
       // 2. Process Companies
-      // Create a map of default companies
       const empresaMap = new Map();
       defaultData.empresas.forEach(emp => {
         empresaMap.set(emp.COD_EMPRESA, { ...emp });
       });
-
-      // Merge imported companies
       importedEmpresas.forEach(emp => {
         empresaMap.set(emp.COD_EMPRESA, { ...emp });
       });
-
-      // Apply card overrides
       empresaMap.forEach((emp, cod) => {
         if (cardOverrides[cod] !== undefined) {
           emp.NUMERO_CARTOES_ATIVOS = cardOverrides[cod];
         }
       });
-
       const mergedEmpresas = Array.from(empresaMap.values());
 
       // 3. Process Phones
@@ -97,12 +93,25 @@ export function DbProvider({ children }) {
       });
       const mergedBandeiras = Array.from(bandeiraMap.values());
 
+      // 7. Process Establishments
+      const estMap = new Map();
+      if (defaultData.estabelecimentos) {
+        defaultData.estabelecimentos.forEach(e => {
+          estMap.set(e.CNPJ, { ...e });
+        });
+      }
+      importedEstabelecimentos.forEach(e => {
+        estMap.set(e.CNPJ, { ...e });
+      });
+      const mergedEstabelecimentos = Array.from(estMap.values());
+
       // Set states
       setEmpresas(mergedEmpresas);
       setTelefones(mergedTelefones);
       setEmails(mergedEmails);
       setFaturamentos(mergedFaturamentos);
       setBandeiras(mergedBandeiras);
+      setEstabelecimentos(mergedEstabelecimentos);
       setLoading(false);
     } catch (error) {
       console.error("Error loading database:", error);
@@ -176,6 +185,12 @@ export function DbProvider({ children }) {
         existingMap.set(item.COD_BANDEIRA, item);
       });
       updated = Array.from(existingMap.values());
+    } else if (type === 'estabelecimentos') {
+      const existingMap = new Map(existing.map(item => [item.CNPJ, item]));
+      data.forEach(item => {
+        existingMap.set(item.CNPJ, item);
+      });
+      updated = Array.from(existingMap.values());
     }
 
     localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -190,6 +205,7 @@ export function DbProvider({ children }) {
     localStorage.removeItem('ampla_imported_emails');
     localStorage.removeItem('ampla_imported_faturamentos');
     localStorage.removeItem('ampla_imported_bandeiras');
+    localStorage.removeItem('ampla_imported_estabelecimentos');
     loadDatabase();
   };
 
@@ -217,6 +233,7 @@ export function DbProvider({ children }) {
       emails,
       faturamentos,
       bandeiras,
+      estabelecimentos,
       loading,
       getBandeiraName,
       updateCartoesAtivos,

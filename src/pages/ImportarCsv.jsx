@@ -6,13 +6,14 @@ import { Upload, AlertCircle, CheckCircle2, Info, RefreshCw, FileSpreadsheet } f
 export default function ImportarCsv() {
   const { importData, resetDatabase } = useDb();
   
-  // Upload status states for the 5 files
+  // Upload status states for the 6 files
   const [statuses, setStatuses] = useState({
     empresas: { loading: false, success: false, error: null, count: 0 },
     telefones: { loading: false, success: false, error: null, count: 0 },
     emails: { loading: false, success: false, error: null, count: 0 },
     faturamentos: { loading: false, success: false, error: null, count: 0 },
-    bandeiras: { loading: false, success: false, error: null, count: 0 }
+    bandeiras: { loading: false, success: false, error: null, count: 0 },
+    estabelecimentos: { loading: false, success: false, error: null, count: 0 }
   });
 
   const updateStatus = (key, val) => {
@@ -155,6 +156,32 @@ export default function ImportarCsv() {
               formattedData.push({
                 COD_BANDEIRA: codBandeira,
                 NOME: row.NOME || row.nome || ''
+              });
+            });
+          }
+          
+          else if (type === 'estabelecimentos') {
+            rows.forEach((row, idx) => {
+              const cnpj = row.CNPJ || row.cnpj || '';
+              const nome = row.ESTABELECIMENTO || row.estabelecimento || '';
+              if (!cnpj || !nome) return;
+              
+              const parseFormattedFloat = (val) => {
+                if (!val) return 0;
+                const cleanVal = String(val).replace(/\./g, '').replace(',', '.');
+                return parseFloat(cleanVal) || 0;
+              };
+
+              formattedData.push({
+                CNPJ: cnpj,
+                ESTABELECIMENTO: nome,
+                MUNICIPIO: row.MUNICIPIO || row.municipio || row.MUNICÍPIO || row.município || '',
+                TIPO: row['TIPO DO ESTABELECIMENTO'] || row.tipo || '',
+                TAXA_ADM: parseFormattedFloat(row['TAXA ADM.'] || row.taxa_adm),
+                VALOR_TOTAL: parseFormattedFloat(row['VALOR TOTAL'] || row.valor_total),
+                VALOR_TAXA: parseFormattedFloat(row['VALOR TAXA'] || row.valor_taxa),
+                QUANTIDADE_VENDAS: parseInt(row['QUANTIDADE VENDAS'] || row.quantidade_vendas) || 0,
+                QUANTIDADE_CARTOES: parseInt(row['QUANTIDADE CARTÕES UTILIZADOS'] || row['QUANTIDADE CART ES UTILIZADOS'] || row.quantidade_cartoes) || 0
               });
             });
           }
@@ -530,6 +557,46 @@ export default function ImportarCsv() {
             <div className="import-status" style={{ color: 'var(--danger)', borderLeft: '3px solid var(--danger)', backgroundColor: '#fef2f2' }}>
               <AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: '6px', display: 'inline' }} />
               {statuses.bandeiras.error}
+            </div>
+          )}
+        </div>
+
+        {/* estabelecimentos */}
+        <div className="importer-card">
+          <div className="importer-card-header">
+            <div className="importer-icon">
+              <FileSpreadsheet size={20} />
+            </div>
+            <div className="importer-card-title">
+              <h3>6. Movimentações Estabelecimentos</h3>
+              <p>Histórico Comercial e Operacional</p>
+            </div>
+          </div>
+          
+          <label className={getDropzoneClass('estabelecimentos')}>
+            <Upload size={28} color={statuses.estabelecimentos.success ? 'var(--success)' : '#94a3b8'} />
+            <span className="dropzone-text">Carregar CSV de Estabelecimentos</span>
+            <span className="dropzone-subtext">CNPJ, ESTABELECIMENTO, MUNICIPIO, VALOR TOTAL...</span>
+            <input 
+              type="file" 
+              accept=".csv" 
+              className="file-input" 
+              onChange={(e) => handleFileUpload('estabelecimentos', e.target.files[0])}
+              disabled={statuses.estabelecimentos.loading}
+            />
+          </label>
+
+          {statuses.estabelecimentos.loading && <div className="import-status">Carregando e integrando registros...</div>}
+          {statuses.estabelecimentos.success && (
+            <div className="import-status" style={{ color: 'var(--success)', borderLeft: '3px solid var(--success)', backgroundColor: '#ecfdf5' }}>
+              <CheckCircle2 size={14} style={{ verticalAlign: 'middle', marginRight: '6px', display: 'inline' }} />
+              Importado com sucesso! ({statuses.estabelecimentos.count} estabelecimentos)
+            </div>
+          )}
+          {statuses.estabelecimentos.error && (
+            <div className="import-status" style={{ color: 'var(--danger)', borderLeft: '3px solid var(--danger)', backgroundColor: '#fef2f2' }}>
+              <AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: '6px', display: 'inline' }} />
+              {statuses.estabelecimentos.error}
             </div>
           )}
         </div>

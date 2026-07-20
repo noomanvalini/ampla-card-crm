@@ -4,13 +4,16 @@ import Dashboard from './pages/Dashboard';
 import EmpresaList from './pages/EmpresaList';
 import EmpresaDetail from './pages/EmpresaDetail';
 import ImportarCsv from './pages/ImportarCsv';
+import DashboardEstabelecimentos from './pages/DashboardEstabelecimentos';
+import EstabelecimentoList from './pages/EstabelecimentoList';
 import { 
   LayoutDashboard, 
   Building2, 
   UploadCloud, 
   RotateCcw,
-  CreditCard,
-  Layers
+  Store,
+  Layers,
+  ListCollapse
 } from 'lucide-react';
 
 export default function App() {
@@ -74,36 +77,75 @@ export default function App() {
           <span className="logo-text">Ampla Card</span>
         </div>
 
-        <nav style={{ flexGrow: 1 }}>
-          <ul className="sidebar-menu">
-            <li>
-              <div 
-                className={`menu-item ${currentPage === 'dashboard' ? 'active' : ''}`}
-                onClick={() => navigate('dashboard')}
-              >
-                <LayoutDashboard className="menu-icon" />
-                Dashboard Geral
-              </div>
-            </li>
-            <li>
-              <div 
-                className={`menu-item ${currentPage === 'empresas' || currentPage === 'detalhe' ? 'active' : ''}`}
-                onClick={() => navigate('empresas')}
-              >
-                <Building2 className="menu-icon" />
-                Lista de Empresas
-              </div>
-            </li>
-            <li>
-              <div 
-                className={`menu-item ${currentPage === 'importar' ? 'active' : ''}`}
-                onClick={() => navigate('importar')}
-              >
-                <UploadCloud className="menu-icon" />
-                Importar CSVs
-              </div>
-            </li>
-          </ul>
+        <nav style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Companies Module */}
+          <div>
+            <div style={{ padding: '0 12px 8px', fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', letterSpacing: '0.5px' }}>
+              Módulo Empresas
+            </div>
+            <ul className="sidebar-menu">
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'dashboard' ? 'active' : ''}`}
+                  onClick={() => navigate('dashboard')}
+                >
+                  <LayoutDashboard className="menu-icon" />
+                  Dashboard Geral
+                </div>
+              </li>
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'empresas' || currentPage === 'detalhe' ? 'active' : ''}`}
+                  onClick={() => navigate('empresas')}
+                >
+                  <Building2 className="menu-icon" />
+                  Lista de Empresas
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          {/* Establishments Module */}
+          <div>
+            <div style={{ padding: '0 12px 8px', fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', letterSpacing: '0.5px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+              Módulo Estabelecimentos
+            </div>
+            <ul className="sidebar-menu">
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'dashboard_estabelecimentos' ? 'active' : ''}`}
+                  onClick={() => navigate('dashboard_estabelecimentos')}
+                >
+                  <Store className="menu-icon" />
+                  Dashboard Estab.
+                </div>
+              </li>
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'lista_estabelecimentos' ? 'active' : ''}`}
+                  onClick={() => navigate('lista_estabelecimentos')}
+                >
+                  <ListCollapse className="menu-icon" />
+                  Lista de Estab.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          {/* Utility module */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+            <ul className="sidebar-menu">
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'importar' ? 'active' : ''}`}
+                  onClick={() => navigate('importar')}
+                >
+                  <UploadCloud className="menu-icon" />
+                  Importar CSVs
+                </div>
+              </li>
+            </ul>
+          </div>
         </nav>
 
         <div className="sidebar-footer">
@@ -129,6 +171,14 @@ export default function App() {
             companyId={selectedCompanyId} 
             onBack={() => navigate('empresas')} 
           />
+        )}
+        
+        {currentPage === 'dashboard_estabelecimentos' && (
+          <DashboardEstabelecimentos />
+        )}
+        
+        {currentPage === 'lista_estabelecimentos' && (
+          <EstabelecimentoList />
         )}
         
         {currentPage === 'importar' && (
