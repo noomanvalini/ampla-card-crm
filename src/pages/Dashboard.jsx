@@ -30,10 +30,10 @@ export default function Dashboard({ onNavigate }) {
   // Selected Month State for interactive filters (defaults to latest month: 2026-jul)
   const [selectedMonth, setSelectedMonth] = useState('2026-jul');
 
-  // Helper: filter out cancelled companies from list
+  // Helper: filter out cancelled (C) and suspended (S) companies - keep only Active (L)
   const activeCompanyIds = useMemo(() => {
     return new Set(
-      empresas.filter(e => e.STATUS !== 'C').map(e => e.COD_EMPRESA)
+      empresas.filter(e => e.STATUS === 'L').map(e => e.COD_EMPRESA)
     );
   }, [empresas]);
 
@@ -43,9 +43,9 @@ export default function Dashboard({ onNavigate }) {
     const activeCompanies = empresas.filter(e => e.STATUS === 'L');
     const totalActive = activeCompanies.length;
 
-    // Total Active Cards (Sum of NUMERO_CARTOES_ATIVOS of active/non-cancelled companies)
+    // Total Active Cards (Sum of NUMERO_CARTOES_ATIVOS of active/non-suspended/non-cancelled companies)
     const totalCards = empresas
-      .filter(e => e.STATUS !== 'C')
+      .filter(e => e.STATUS === 'L')
       .reduce((sum, e) => sum + (e.NUMERO_CARTOES_ATIVOS || 0), 0);
 
     // Faturamento Total do Mês Selecionado (excluding cancelled companies)

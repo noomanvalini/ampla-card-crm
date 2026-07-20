@@ -1,12 +1,15 @@
 import React, { useMemo } from 'react';
 import { useDb } from '../context/DbContext';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Store, MapPin, CreditCard, DollarSign, TrendingUp, Layers } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#38bdf8', '#a78bfa', '#c084fc', '#f472b6', '#fb7185', '#34d399', '#fbbf24'];
+const COLORS = [
+  '#2563eb', '#3b82f6', '#60a5fa', '#38bdf8', '#a78bfa', 
+  '#c084fc', '#f472b6', '#fb7185', '#34d399', '#fbbf24',
+  '#0d9488', '#ea580c', '#16a34a', '#db2777', '#4f46e5'
+];
 
 export default function DashboardEstabelecimentos() {
   const { estabelecimentos } = useDb();
@@ -26,7 +29,7 @@ export default function DashboardEstabelecimentos() {
     };
   }, [estabelecimentos]);
 
-  // 2. Sales by City (Top Cities by Volume)
+  // 2. Sales by City (Top 20 Cities by Volume)
   const salesByCityData = useMemo(() => {
     const citySums = {};
     estabelecimentos.forEach(e => {
@@ -40,10 +43,10 @@ export default function DashboardEstabelecimentos() {
         'Volume de Vendas': parseFloat(value.toFixed(2))
       }))
       .sort((a, b) => b['Volume de Vendas'] - a['Volume de Vendas'])
-      .slice(0, 10); // Top 10 cities
+      .slice(0, 20); // Top 20 cities as requested
   }, [estabelecimentos]);
 
-  // 3. Sales by Establishment Type
+  // 3. Sales by Establishment Type (Raw data for list rendering)
   const salesByTypeData = useMemo(() => {
     const typeSums = {};
     estabelecimentos.forEach(e => {
@@ -53,13 +56,27 @@ export default function DashboardEstabelecimentos() {
 
     return Object.entries(typeSums)
       .map(([name, value]) => ({
-        name: name.length > 25 ? name.substring(0, 25) + '...' : name,
+        name,
         value: parseFloat(value.toFixed(2))
       }))
       .sort((a, b) => b.value - a.value);
   }, [estabelecimentos]);
 
-  // 4. Top 10 Establishments by Sales Volume
+  // 4. Sales items with percentages computed for list rendering
+  const establishmentTypeListItems = useMemo(() => {
+    const totalSales = kpis.totalSalesVol || 1;
+    return salesByTypeData.map((item, index) => {
+      const pct = (item.value / totalSales) * 100;
+      return {
+        name: item.name,
+        value: item.value,
+        percentage: pct,
+        color: COLORS[index % COLORS.length]
+      };
+    });
+  }, [salesByTypeData, kpis.totalSalesVol]);
+
+  // 5. Top 10 Establishments by Sales Volume
   const top10Estabelecimentos = useMemo(() => {
     return [...estabelecimentos]
       .sort((a, b) => (b.VALOR_TOTAL || 0) - (a.VALOR_TOTAL || 0))
@@ -92,27 +109,6 @@ export default function DashboardEstabelecimentos() {
           <p style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px', color: '#0f172a' }}>{label}</p>
           <p style={{ fontWeight: 600, fontSize: '15px', color: '#2563eb' }}>
             {formatCurrency(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const CustomPieTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '12px 16px',
-          border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-        }}>
-          <p style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px', color: '#0f172a' }}>{data.name}</p>
-          <p style={{ fontWeight: 600, fontSize: '15px', color: '#2563eb' }}>
-            {formatCurrency(data.value)}
           </p>
         </div>
       );
@@ -172,88 +168,87 @@ export default function DashboardEstabelecimentos() {
         </div>
       </div>
 
-      {/* Charts Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-        {/* City Sales Chart */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <div className="chart-title">Volume de Vendas por Cidade (Top 10)</div>
-            <MapPin size={20} color="#94a3b8" />
-          </div>
-          <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={salesByCityData}
-                margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 10 }}
-                  angle={-25}
-                  textAnchor="end"
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  tickFormatter={(val) => `R$ ${(val/1000).toFixed(0)}k`} 
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(37, 99, 235, 0.02)' }} />
-                <Bar 
-                  dataKey="Volume de Vendas" 
-                  fill="url(#colorEstSales)" 
-                  radius={[6, 6, 0, 0]} 
-                  maxBarSize={35}
-                >
-                  <defs>
-                    <linearGradient id="colorEstSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.95}/>
-                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.5}/>
-                    </linearGradient>
-                  </defs>
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* City Sales Chart (Full Width) */}
+      <div className="chart-card" style={{ marginBottom: '24px' }}>
+        <div className="chart-header">
+          <div className="chart-title">Volume de Vendas por Cidade (Top 20)</div>
+          <MapPin size={20} color="#94a3b8" />
         </div>
+        <div className="chart-wrapper" style={{ height: '360px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={salesByCityData}
+              margin={{ top: 10, right: 10, left: 10, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#64748b', fontSize: 9 }}
+                angle={-35}
+                textAnchor="end"
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                tickFormatter={(val) => `R$ ${(val/1000).toFixed(0)}k`} 
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(37, 99, 235, 0.02)' }} />
+              <Bar 
+                dataKey="Volume de Vendas" 
+                fill="url(#colorEstSales)" 
+                radius={[6, 6, 0, 0]} 
+                maxBarSize={30}
+              >
+                <defs>
+                  <linearGradient id="colorEstSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.95}/>
+                    <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.5}/>
+                  </linearGradient>
+                </defs>
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-        {/* Type Sales Chart */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <div className="chart-title">Vendas por Tipo de Estabelecimento</div>
-            <Layers size={20} color="#94a3b8" />
-          </div>
-          <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={salesByTypeData}
-                  cx="50%"
-                  cy="45%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={4}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  labelLine={false}
-                  style={{ fontSize: '9px', fontWeight: '500' }}
-                >
-                  {salesByTypeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomPieTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Sales by Segment List (Below City Chart, Full Width) */}
+      <div className="chart-card" style={{ marginBottom: '24px' }}>
+        <div className="chart-header">
+          <div className="chart-title">Representação Comercial por Tipo de Estabelecimento</div>
+          <Layers size={20} color="#94a3b8" />
+        </div>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {establishmentTypeListItems.map((item, idx) => (
+            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: '600' }}>
+                <span style={{ color: '#334155' }}>{item.name}</span>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <span style={{ color: '#2563eb', fontSize: '12px', fontWeight: '700', backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px' }}>
+                    {item.percentage.toFixed(1)}%
+                  </span>
+                  <span style={{ color: '#0f172a', fontWeight: '700' }}>{formatCurrency(item.value)}</span>
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                <div 
+                  style={{ 
+                    width: `${item.percentage}%`, 
+                    height: '100%', 
+                    backgroundColor: item.color, 
+                    borderRadius: '4px'
+                  }} 
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Top 10 Establishments Table */}
-      <div className="table-container">
+      <div className="table-container" style={{ marginBottom: '32px' }}>
         <div className="table-header-controls">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div className="logo-icon" style={{ width: '28px', height: '28px', borderRadius: '6px' }}>

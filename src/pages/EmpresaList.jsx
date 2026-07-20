@@ -1,41 +1,46 @@
 import React, { useState, useMemo } from 'react';
 import { useDb } from '../context/DbContext';
-import { Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function EmpresaList({ onSelectCompany }) {
-  const { empresas } = useDb();
+  const { empresas, faturamentos } = useDb();
   
   // Search and Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [filterWithMovements, setFilterWithMovements] = useState(true);
+  const [filterWithoutMovements, setFilterWithoutMovements] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
+
+  // Group faturamentos to see who has movements
+  const movingCompanyIds = useMemo(() => {
+    return new Set((faturamentos || []).map(f => f.COD_EMPRESA));
+  }, [faturamentos]);
 
   // Filter and Search logic
   const filteredEmpresas = useMemo(() => {
     return empresas.filter(emp => {
-      // Exclude cancelled companies
-      if (emp.STATUS === 'C') return false;
+      // Exclude cancelled (C) and suspended (S) companies - show only Active (L)
+      if (emp.STATUS !== 'L') return false;
 
-      // 1. Search term match (CNPJ, Fantasia, Razao)
+      const hasMovement = movingCompanyIds.has(emp.COD_EMPRESA);
+      if (hasMovement && !filterWithMovements) return false;
+      if (!hasMovement && !filterWithoutMovements) return false;
+
+      // Search term match (CNPJ, Fantasia, Razao)
       const matchesSearch = 
         (emp.FANTASIA || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (emp.RAZAO || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (emp.CNPJ || '').includes(searchTerm);
       
-      // 2. Status match
-      const matchesStatus = 
-        statusFilter === 'ALL' || 
-        emp.STATUS === statusFilter;
-      
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [empresas, searchTerm, statusFilter]);
+  }, [empresas, movingCompanyIds, filterWithMovements, filterWithoutMovements, searchTerm]);
 
   // Reset page when search/filter changes
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, filterWithMovements, filterWithoutMovements]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredEmpresas.length / itemsPerPage));
@@ -67,33 +72,19 @@ export default function EmpresaList({ onSelectCompany }) {
     return padded.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
   };
 
-  // Status text & class helper
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'L':
-        return <span className="badge active">Ativa (L)</span>;
-      case 'C':
-        return <span className="badge inactive">Cancelada (C)</span>;
-      case 'S':
-        return <span className="badge warning">Suspensa (S)</span>;
-      default:
-        return <span className="badge neutral">{status || 'N/A'}</span>;
-    }
-  };
-
   return (
     <div className="animate-fade-in">
       <div className="content-header">
         <div className="header-title-container">
           <h1>Lista de Empresas</h1>
-          <p>Gerenciamento e busca de empresas cadastradas no CRM ({filteredEmpresas.length} de {empresas.length} empresas)</p>
+          <p>Exibindo empresas ativas no CRM ({filteredEmpresas.length} de {empresas.filter(e => e.STATUS === 'L').length} ativas, suspensas e canceladas ocultadas)</p>
         </div>
       </div>
 
       <div className="table-container">
         {/* Search and Filters bar */}
-        <div className="table-header-controls">
-          <div className="search-wrapper">
+        <div className="table-header-controls" style={{ flexWrap: 'wrap', gap: '16px' }}>
+          <div className="search-wrapper" style={{ flexGrow: 1, minWidth: '280px' }}>
             <Search className="search-icon" />
             <input 
               type="text" 
@@ -104,18 +95,25 @@ export default function EmpresaList({ onSelectCompany }) {
             />
           </div>
 
-          <div className="filter-wrapper">
-            <Filter size={18} color="#64748b" />
-            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>Status:</span>
-            <select 
-              className="filter-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="ALL">Todas as Empresas</option>
-              <option value="L">Somente Ativas (L)</option>
-              <option value="S">Somente Suspensas (S)</option>
-            </select>
+          <div className="filter-wrapper" style={{ gap: '20px', padding: '0 8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#475569' }}>
+              <input 
+                type="checkbox" 
+                checked={filterWithMovements} 
+                onChange={(e) => setFilterWithMovements(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
+              />
+              Com Movimentação
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#475569' }}>
+              <input 
+                type="checkbox" 
+                checked={filterWithoutMovements} 
+                onChange={(e) => setFilterWithoutMovements(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
+              />
+              Sem Movimentação
+            </label>
           </div>
         </div>
 
@@ -128,7 +126,7 @@ export default function EmpresaList({ onSelectCompany }) {
                 <th>Nome Fantasia</th>
                 <th>CNPJ</th>
                 <th>Município</th>
-                <th style={{ width: '150px' }}>Status</th>
+                <th style={{ width: '180px', textAlign: 'center' }}>Movimentação</th>
               </tr>
             </thead>
             <tbody>
@@ -138,7 +136,7 @@ export default function EmpresaList({ onSelectCompany }) {
                     key={emp.COD_EMPRESA} 
                     onClick={() => onSelectCompany(emp.COD_EMPRESA)}
                   >
-                    <td style={{ fontWeight: '600', color: '#2563eb' }}>#{emp.COD_EMPRESA}</td>
+                    <td style={{ fontWeight: '600', color: '#2563eb' }}># {emp.COD_EMPRESA}</td>
                     <td>
                       <div style={{ fontWeight: '600' }}>{emp.FANTASIA || 'N/A'}</div>
                       <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
@@ -147,7 +145,17 @@ export default function EmpresaList({ onSelectCompany }) {
                     </td>
                     <td>{formatCNPJ(emp.CNPJ)}</td>
                     <td>{emp.MUNICIPIO || 'N/A'}</td>
-                    <td>{getStatusBadge(emp.STATUS)}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {movingCompanyIds.has(emp.COD_EMPRESA) ? (
+                        <span className="badge active" style={{ display: 'inline-block', backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '3px 8px', fontSize: '11px', borderRadius: '12px', fontWeight: '600' }}>
+                          Com Movimentação
+                        </span>
+                      ) : (
+                        <span className="badge neutral" style={{ display: 'inline-block', backgroundColor: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1', padding: '3px 8px', fontSize: '11px', borderRadius: '12px', fontWeight: '500' }}>
+                          Sem Movimentação
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (

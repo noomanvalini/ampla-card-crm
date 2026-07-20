@@ -6,6 +6,7 @@ import EmpresaDetail from './pages/EmpresaDetail';
 import ImportarCsv from './pages/ImportarCsv';
 import DashboardEstabelecimentos from './pages/DashboardEstabelecimentos';
 import EstabelecimentoList from './pages/EstabelecimentoList';
+import MovimentacaoCidade from './pages/MovimentacaoCidade';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -13,7 +14,8 @@ import {
   RotateCcw,
   Store,
   Layers,
-  ListCollapse
+  ListCollapse,
+  MapPin
 } from 'lucide-react';
 
 export default function App() {
@@ -129,6 +131,15 @@ export default function App() {
                   Lista de Estab.
                 </div>
               </li>
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'movimentacao_cidade' ? 'active' : ''}`}
+                  onClick={() => navigate('movimentacao_cidade')}
+                >
+                  <MapPin className="menu-icon" />
+                  Vendas por Cidade
+                </div>
+              </li>
             </ul>
           </div>
 
@@ -179,6 +190,10 @@ export default function App() {
         
         {currentPage === 'lista_estabelecimentos' && (
           <EstabelecimentoList />
+        )}
+
+        {currentPage === 'movimentacao_cidade' && (
+          <MovimentacaoCidade />
         )}
         
         {currentPage === 'importar' && (
