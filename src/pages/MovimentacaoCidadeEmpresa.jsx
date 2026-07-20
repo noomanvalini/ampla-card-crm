@@ -1,12 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { useDb } from '../context/DbContext';
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, MapPin } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, MapPin, Calendar } from 'lucide-react';
+
+const monthOptions = [
+  { value: '2026-mar', label: 'Março/2026' },
+  { value: '2026-abr', label: 'Abril/2026' },
+  { value: '2026-mai', label: 'Maio/2026' },
+  { value: '2026-jun', label: 'Junho/2026' },
+  { value: '2026-jul', label: 'Julho/2026' }
+];
 
 export default function MovimentacaoCidadeEmpresa() {
   const { empresas, faturamentos } = useDb();
 
   // Search and Filter states
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('2026-jul');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
@@ -14,7 +23,7 @@ export default function MovimentacaoCidadeEmpresa() {
   const [sortField, setSortField] = useState('VALOR');
   const [sortDirection, setSortDirection] = useState('desc');
 
-  // Group faturamentos of active companies by their city
+  // Group faturamentos of active companies by their city and selected month
   const cityMovements = useMemo(() => {
     // 1. Create a map of active company ID -> city name
     const companyCityMap = new Map();
@@ -24,20 +33,22 @@ export default function MovimentacaoCidadeEmpresa() {
       }
     });
 
-    // 2. Sum faturamentos by city
+    // 2. Sum faturamentos by city (filtered by selectedMonth)
     const groups = {};
     faturamentos.forEach(fat => {
-      const city = companyCityMap.get(fat.COD_EMPRESA);
-      if (city) {
-        if (!groups[city]) {
-          groups[city] = {
-            MUNICIPIO: city,
-            VALOR: 0,
-            EMPRESAS_COUNT: new Set()
-          };
+      if (fat.MES_REFERENCIA === selectedMonth) {
+        const city = companyCityMap.get(fat.COD_EMPRESA);
+        if (city) {
+          if (!groups[city]) {
+            groups[city] = {
+              MUNICIPIO: city,
+              VALOR: 0,
+              EMPRESAS_COUNT: new Set()
+            };
+          }
+          groups[city].VALOR += fat.VALOR || 0;
+          groups[city].EMPRESAS_COUNT.add(fat.COD_EMPRESA);
         }
-        groups[city].VALOR += fat.VALOR || 0;
-        groups[city].EMPRESAS_COUNT.add(fat.COD_EMPRESA);
       }
     });
 
@@ -47,7 +58,7 @@ export default function MovimentacaoCidadeEmpresa() {
       VALOR: parseFloat(g.VALOR.toFixed(2)),
       EMPRESAS_COUNT: g.EMPRESAS_COUNT.size
     }));
-  }, [empresas, faturamentos]);
+  }, [empresas, faturamentos, selectedMonth]);
 
   // Search filter logic
   const searchedCities = useMemo(() => {
@@ -84,10 +95,10 @@ export default function MovimentacaoCidadeEmpresa() {
     return sorted;
   }, [searchedCities, sortField, sortDirection]);
 
-  // Reset page when search or sort changes
+  // Reset page when search or sort or month changes
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, sortField, sortDirection]);
+  }, [searchTerm, sortField, sortDirection, selectedMonth]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(sortedCities.length / itemsPerPage));
@@ -128,19 +139,24 @@ export default function MovimentacaoCidadeEmpresa() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
+  const getMonthLabel = (val) => {
+    const opt = monthOptions.find(o => o.value === val);
+    return opt ? opt.label : val;
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="content-header">
         <div className="header-title-container">
           <h1>Faturamento de Empresas por Cidade</h1>
-          <p>Consolidado de faturamento mensal das empresas clientes agrupado por município ({cityMovements.length} cidades ativas mapeadas)</p>
+          <p>Consolidado de faturamento mensal das empresas clientes agrupado por município em <strong>{getMonthLabel(selectedMonth)}</strong></p>
         </div>
       </div>
 
       <div className="table-container">
         {/* Controls bar */}
-        <div className="table-header-controls">
-          <div className="search-wrapper" style={{ maxWidth: '400px' }}>
+        <div className="table-header-controls" style={{ flexWrap: 'wrap', gap: '16px' }}>
+          <div className="search-wrapper" style={{ flexGrow: 1, minWidth: '280px', maxWidth: '400px' }}>
             <Search className="search-icon" />
             <input 
               type="text" 
@@ -150,8 +166,20 @@ export default function MovimentacaoCidadeEmpresa() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div style={{ fontSize: '13px', color: '#64748b' }}>
-            Clique no cabeçalho das colunas para ordenar os dados.
+
+          <div className="filter-wrapper" style={{ gap: '12px' }}>
+            <Calendar size={18} color="#64748b" />
+            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>Mês de Referência:</span>
+            <select 
+              className="filter-select"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '14px', fontWeight: '500', color: '#0f172a', outline: 'none' }}
+            >
+              {monthOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -190,7 +218,7 @@ export default function MovimentacaoCidadeEmpresa() {
               ) : (
                 <tr>
                   <td colSpan="3" style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
-                    Nenhuma cidade encontrada com o termo buscado.
+                    Nenhuma cidade com movimentação ativa em {getMonthLabel(selectedMonth)}.
                   </td>
                 </tr>
               )}
