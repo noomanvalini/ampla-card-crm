@@ -7,6 +7,7 @@ import ImportarCsv from './pages/ImportarCsv';
 import DashboardEstabelecimentos from './pages/DashboardEstabelecimentos';
 import EstabelecimentoList from './pages/EstabelecimentoList';
 import MovimentacaoCidade from './pages/MovimentacaoCidade';
+import MovimentacaoCidadeEmpresa from './pages/MovimentacaoCidadeEmpresa';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -104,6 +105,15 @@ export default function App() {
                   Lista de Empresas
                 </div>
               </li>
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'movimentacao_cidade_empresa' ? 'active' : ''}`}
+                  onClick={() => navigate('movimentacao_cidade_empresa')}
+                >
+                  <MapPin className="menu-icon" />
+                  Faturamento por Cidade
+                </div>
+              </li>
             </ul>
           </div>
 
@@ -194,6 +204,10 @@ export default function App() {
 
         {currentPage === 'movimentacao_cidade' && (
           <MovimentacaoCidade />
+        )}
+
+        {currentPage === 'movimentacao_cidade_empresa' && (
+          <MovimentacaoCidadeEmpresa />
         )}
         
         {currentPage === 'importar' && (
