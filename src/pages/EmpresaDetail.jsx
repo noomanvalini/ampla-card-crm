@@ -101,13 +101,12 @@ export default function EmpresaDetail({ companyId, onBack }) {
 
   // Billing Chart Data
   const chartData = useMemo(() => {
-    const months = ['2026-mar', '2026-abr', '2026-mai', '2026-jun', '2026-jul'];
+    const months = ['2026-mar', '2026-abr', '2026-mai', '2026-jun'];
     const monthLabels = {
       '2026-mar': 'Março',
       '2026-abr': 'Abril',
       '2026-mai': 'Maio',
-      '2026-jun': 'Junho',
-      '2026-jul': 'Julho'
+      '2026-jun': 'Junho'
     };
 
     // Calculate sum of billing for this company per month
@@ -371,15 +370,15 @@ export default function EmpresaDetail({ companyId, onBack }) {
                 </tr>
               </thead>
               <tbody>
-                {company.faturamentos.length > 0 ? (
+                {company.faturamentos.filter(f => f.MES_REFERENCIA !== '2026-jul').length > 0 ? (
                   [...company.faturamentos]
+                    .filter(f => f.MES_REFERENCIA !== '2026-jul')
                     .sort((a, b) => {
                       const monthOrder = {
                         '2026-mar': 1,
                         '2026-abr': 2,
                         '2026-mai': 3,
-                        '2026-jun': 4,
-                        '2026-jul': 5
+                        '2026-jun': 4
                       };
                       return (monthOrder[a.MES_REFERENCIA] || 99) - (monthOrder[b.MES_REFERENCIA] || 99);
                     })

@@ -27,8 +27,8 @@ const monthLabelsLong = {
 export default function Dashboard({ onNavigate }) {
   const { empresas, faturamentos } = useDb();
   
-  // Selected Month State for interactive filters (defaults to latest month: 2026-jul)
-  const [selectedMonth, setSelectedMonth] = useState('2026-jul');
+  // Selected Month State for interactive filters (defaults to latest closed month: 2026-jun)
+  const [selectedMonth, setSelectedMonth] = useState('2026-jun');
 
   // Helper: filter out cancelled (C) and suspended (S) companies - keep only Active (L)
   const activeCompanyIds = useMemo(() => {
@@ -62,13 +62,12 @@ export default function Dashboard({ onNavigate }) {
 
   // 2. Billing history per month (Bar Chart)
   const monthlyBillingData = useMemo(() => {
-    const months = ['2026-mar', '2026-abr', '2026-mai', '2026-jun', '2026-jul'];
+    const months = ['2026-mar', '2026-abr', '2026-mai', '2026-jun'];
     const monthLabelsShort = {
       '2026-mar': 'Março',
       '2026-abr': 'Abril',
       '2026-mai': 'Maio',
-      '2026-jun': 'Junho',
-      '2026-jul': 'Julho'
+      '2026-jun': 'Junho'
     };
 
     const monthlySums = {};

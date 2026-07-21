@@ -6,8 +6,7 @@ const monthOptions = [
   { value: '2026-mar', label: 'Março/2026' },
   { value: '2026-abr', label: 'Abril/2026' },
   { value: '2026-mai', label: 'Maio/2026' },
-  { value: '2026-jun', label: 'Junho/2026' },
-  { value: '2026-jul', label: 'Julho/2026' }
+  { value: '2026-jun', label: 'Junho/2026' }
 ];
 
 export default function MovimentacaoCidadeEmpresa() {
@@ -15,7 +14,7 @@ export default function MovimentacaoCidadeEmpresa() {
 
   // Search and Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('2026-jul');
+  const [selectedMonth, setSelectedMonth] = useState('2026-jun');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
