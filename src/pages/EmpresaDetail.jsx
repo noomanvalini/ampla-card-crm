@@ -278,7 +278,14 @@ export default function EmpresaDetail({ companyId, onBack }) {
                       <Phone size={16} />
                     </div>
                     <div className="phone-details">
-                      <div className="phone-number">{formatPhone(t.DDD, t.NUMERO)}</div>
+                      <div className="phone-number">
+                        <a 
+                          href={`tel:${(t.DDD || '').replace(/\D/g, '')}${(t.NUMERO || '').replace(/\D/g, '')}`} 
+                          style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '700' }}
+                        >
+                          {formatPhone(t.DDD, t.NUMERO)}
+                        </a>
+                      </div>
                       <div className="phone-type">{t.COD_TIPO === '2' ? 'Celular' : t.COD_TIPO === '1' ? 'Fixo' : 'Outro'}</div>
                     </div>
                   </div>
@@ -309,7 +316,14 @@ export default function EmpresaDetail({ companyId, onBack }) {
                     {company.emails.map((e) => (
                       <tr key={e.ID}>
                         <td style={{ fontWeight: '500' }}>{e.NOME || 'Não Informado'}</td>
-                        <td style={{ color: '#475569' }}>{e.EMAIL}</td>
+                        <td style={{ color: '#475569' }}>
+                          <a 
+                            href={`mailto:${e.EMAIL}`} 
+                            style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}
+                          >
+                            {e.EMAIL}
+                          </a>
+                        </td>
                         <td>
                           {e.EMAIL_FECHTO ? (
                             <span className="email-flag active"><Check size={12} /> Sim</span>
