@@ -358,8 +358,17 @@ export default function EmpresaDetail({ companyId, onBack }) {
               </thead>
               <tbody>
                 {company.faturamentos.length > 0 ? (
-                  company.faturamentos
-                    .sort((a, b) => b.MES_REFERENCIA.localeCompare(a.MES_REFERENCIA))
+                  [...company.faturamentos]
+                    .sort((a, b) => {
+                      const monthOrder = {
+                        '2026-mar': 1,
+                        '2026-abr': 2,
+                        '2026-mai': 3,
+                        '2026-jun': 4,
+                        '2026-jul': 5
+                      };
+                      return (monthOrder[a.MES_REFERENCIA] || 99) - (monthOrder[b.MES_REFERENCIA] || 99);
+                    })
                     .map((f) => (
                       <tr key={f.ID} style={{ cursor: 'default' }}>
                         <td style={{ fontWeight: '600' }}>
