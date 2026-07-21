@@ -3,7 +3,6 @@ import { useDb } from './context/DbContext';
 import Dashboard from './pages/Dashboard';
 import EmpresaList from './pages/EmpresaList';
 import EmpresaDetail from './pages/EmpresaDetail';
-import ImportarCsv from './pages/ImportarCsv';
 import DashboardEstabelecimentos from './pages/DashboardEstabelecimentos';
 import EstabelecimentoList from './pages/EstabelecimentoList';
 import MovimentacaoCidade from './pages/MovimentacaoCidade';
@@ -11,7 +10,6 @@ import MovimentacaoCidadeEmpresa from './pages/MovimentacaoCidadeEmpresa';
 import { 
   LayoutDashboard, 
   Building2, 
-  UploadCloud, 
   RotateCcw,
   Store,
   Layers,
@@ -152,21 +150,6 @@ export default function App() {
               </li>
             </ul>
           </div>
-
-          {/* Utility module */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
-            <ul className="sidebar-menu">
-              <li>
-                <div 
-                  className={`menu-item ${currentPage === 'importar' ? 'active' : ''}`}
-                  onClick={() => navigate('importar')}
-                >
-                  <UploadCloud className="menu-icon" />
-                  Importar CSVs
-                </div>
-              </li>
-            </ul>
-          </div>
         </nav>
 
         <div className="sidebar-footer">
@@ -208,10 +191,6 @@ export default function App() {
 
         {currentPage === 'movimentacao_cidade_empresa' && (
           <MovimentacaoCidadeEmpresa />
-        )}
-        
-        {currentPage === 'importar' && (
-          <ImportarCsv />
         )}
       </main>
     </div>
