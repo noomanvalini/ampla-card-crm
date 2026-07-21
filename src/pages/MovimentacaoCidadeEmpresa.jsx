@@ -147,8 +147,8 @@ export default function MovimentacaoCidadeEmpresa() {
     <div className="animate-fade-in">
       <div className="content-header">
         <div className="header-title-container">
-          <h1>Faturamento de Empresas por Cidade</h1>
-          <p>Consolidado de faturamento mensal das empresas clientes agrupado por município em <strong>{getMonthLabel(selectedMonth)}</strong></p>
+          <h1>Movimentação de Empresas por Cidade</h1>
+          <p>Consolidado de movimentação mensal das empresas clientes agrupado por município em <strong>{getMonthLabel(selectedMonth)}</strong></p>
         </div>
       </div>
 

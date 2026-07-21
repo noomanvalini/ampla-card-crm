@@ -78,7 +78,7 @@ export default function EmpresaList({ onSelectCompany }) {
       <div className="content-header">
         <div className="header-title-container">
           <h1>Lista de Empresas</h1>
-          <p>Exibindo empresas ativas com movimentações financeiras no CRM ({filteredEmpresas.length} ativas movimentando, empresas sem faturamento ocultadas)</p>
+          <p>Exibindo empresas ativas com movimentações financeiras.</p>
         </div>
       </div>
 

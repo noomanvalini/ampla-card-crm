@@ -109,7 +109,7 @@ export default function App() {
                   onClick={() => navigate('movimentacao_cidade_empresa')}
                 >
                   <MapPin className="menu-icon" />
-                  Faturamento por Cidade
+                  Movimentação por Cidade
                 </div>
               </li>
             </ul>
