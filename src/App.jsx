@@ -151,13 +151,6 @@ export default function App() {
             </ul>
           </div>
         </nav>
-
-        <div className="sidebar-footer">
-          <button className="reset-db-btn" onClick={handleResetDb}>
-            <RotateCcw size={14} />
-            Redefinir Dados Originais
-          </button>
-        </div>
       </aside>
 
       {/* Main Content Area */}

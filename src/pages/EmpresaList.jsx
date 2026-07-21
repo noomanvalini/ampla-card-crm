@@ -5,16 +5,18 @@ import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 export default function EmpresaList({ onSelectCompany }) {
   const { empresas, faturamentos } = useDb();
   
-  // Search and Filter states
+  // Search and Pagination states
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterWithMovements, setFilterWithMovements] = useState(true);
-  const [filterWithoutMovements, setFilterWithoutMovements] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
-  // Group faturamentos to see who has movements
+  // Group faturamentos to see who has movements (excluding July 2026)
   const movingCompanyIds = useMemo(() => {
-    return new Set((faturamentos || []).map(f => f.COD_EMPRESA));
+    return new Set(
+      (faturamentos || [])
+        .filter(f => f.MES_REFERENCIA !== '2026-jul')
+        .map(f => f.COD_EMPRESA)
+    );
   }, [faturamentos]);
 
   // Filter and Search logic
@@ -23,9 +25,8 @@ export default function EmpresaList({ onSelectCompany }) {
       // Exclude cancelled (C) and suspended (S) companies - show only Active (L)
       if (emp.STATUS !== 'L') return false;
 
-      const hasMovement = movingCompanyIds.has(emp.COD_EMPRESA);
-      if (hasMovement && !filterWithMovements) return false;
-      if (!hasMovement && !filterWithoutMovements) return false;
+      // Show ONLY companies with active movements/billing (excluding July)
+      if (!movingCompanyIds.has(emp.COD_EMPRESA)) return false;
 
       // Search term match (CNPJ, Fantasia, Razao)
       const matchesSearch = 
@@ -35,12 +36,12 @@ export default function EmpresaList({ onSelectCompany }) {
       
       return matchesSearch;
     });
-  }, [empresas, movingCompanyIds, filterWithMovements, filterWithoutMovements, searchTerm]);
+  }, [empresas, movingCompanyIds, searchTerm]);
 
-  // Reset page when search/filter changes
+  // Reset page when search changes
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterWithMovements, filterWithoutMovements]);
+  }, [searchTerm]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredEmpresas.length / itemsPerPage));
@@ -77,43 +78,22 @@ export default function EmpresaList({ onSelectCompany }) {
       <div className="content-header">
         <div className="header-title-container">
           <h1>Lista de Empresas</h1>
-          <p>Exibindo empresas ativas no CRM ({filteredEmpresas.length} de {empresas.filter(e => e.STATUS === 'L').length} ativas, suspensas e canceladas ocultadas)</p>
+          <p>Exibindo empresas ativas com movimentações financeiras no CRM ({filteredEmpresas.length} ativas movimentando, empresas sem faturamento ocultadas)</p>
         </div>
       </div>
 
       <div className="table-container">
-        {/* Search and Filters bar */}
+        {/* Search bar */}
         <div className="table-header-controls" style={{ flexWrap: 'wrap', gap: '16px' }}>
           <div className="search-wrapper" style={{ flexGrow: 1, minWidth: '280px' }}>
             <Search className="search-icon" />
             <input 
               type="text" 
               className="search-input" 
-              placeholder="Buscar por Nome Fantasia, Razão ou CNPJ..." 
+              placeholder="Buscar por Nome Fantasia, Razão ou CNPJ de empresas movimentando..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
-
-          <div className="filter-wrapper" style={{ gap: '20px', padding: '0 8px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#475569' }}>
-              <input 
-                type="checkbox" 
-                checked={filterWithMovements} 
-                onChange={(e) => setFilterWithMovements(e.target.checked)}
-                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
-              />
-              Com Movimentação
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#475569' }}>
-              <input 
-                type="checkbox" 
-                checked={filterWithoutMovements} 
-                onChange={(e) => setFilterWithoutMovements(e.target.checked)}
-                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
-              />
-              Sem Movimentação
-            </label>
           </div>
         </div>
 
@@ -126,7 +106,6 @@ export default function EmpresaList({ onSelectCompany }) {
                 <th>Nome Fantasia</th>
                 <th>CNPJ</th>
                 <th>Município</th>
-                <th style={{ width: '180px', textAlign: 'center' }}>Movimentação</th>
               </tr>
             </thead>
             <tbody>
@@ -145,23 +124,12 @@ export default function EmpresaList({ onSelectCompany }) {
                     </td>
                     <td>{formatCNPJ(emp.CNPJ)}</td>
                     <td>{emp.MUNICIPIO || 'N/A'}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      {movingCompanyIds.has(emp.COD_EMPRESA) ? (
-                        <span className="badge active" style={{ display: 'inline-block', backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '3px 8px', fontSize: '11px', borderRadius: '12px', fontWeight: '600' }}>
-                          Com Movimentação
-                        </span>
-                      ) : (
-                        <span className="badge neutral" style={{ display: 'inline-block', backgroundColor: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1', padding: '3px 8px', fontSize: '11px', borderRadius: '12px', fontWeight: '500' }}>
-                          Sem Movimentação
-                        </span>
-                      )}
-                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
-                    Nenhuma empresa encontrada com os termos informados.
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                    Nenhuma empresa movimentando encontrada com os termos informados.
                   </td>
                 </tr>
               )}
