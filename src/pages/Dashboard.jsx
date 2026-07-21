@@ -30,22 +30,26 @@ export default function Dashboard({ onNavigate }) {
   // Selected Month State for interactive filters (defaults to latest closed month: 2026-jun)
   const [selectedMonth, setSelectedMonth] = useState('2026-jun');
 
-  // Helper: filter out cancelled (C) and suspended (S) companies - keep only Active (L)
+  // Helper: filter to only active (L) companies that have faturamento (excluding July)
   const activeCompanyIds = useMemo(() => {
-    return new Set(
-      empresas.filter(e => e.STATUS === 'L').map(e => e.COD_EMPRESA)
-    );
-  }, [empresas]);
+    const activeIds = new Set(empresas.filter(e => e.STATUS === 'L').map(e => e.COD_EMPRESA));
+    const movingIds = new Set();
+    faturamentos.forEach(f => {
+      if (f.MES_REFERENCIA !== '2026-jul' && activeIds.has(f.COD_EMPRESA)) {
+        movingIds.add(f.COD_EMPRESA);
+      }
+    });
+    return movingIds;
+  }, [empresas, faturamentos]);
 
   // 1. Calculations for KPIs
   const kpis = useMemo(() => {
-    // Total Active Companies (STATUS === 'L')
-    const activeCompanies = empresas.filter(e => e.STATUS === 'L');
-    const totalActive = activeCompanies.length;
+    // Total Active Companies with movements
+    const totalActive = activeCompanyIds.size;
 
-    // Total Active Cards (Sum of NUMERO_CARTOES_ATIVOS of active/non-suspended/non-cancelled companies)
+    // Total Active Cards (Sum of NUMERO_CARTOES_ATIVOS of active companies with movements)
     const totalCards = empresas
-      .filter(e => e.STATUS === 'L')
+      .filter(e => activeCompanyIds.has(e.COD_EMPRESA))
       .reduce((sum, e) => sum + (e.NUMERO_CARTOES_ATIVOS || 0), 0);
 
     // Faturamento Total do Mês Selecionado (excluding cancelled companies)
