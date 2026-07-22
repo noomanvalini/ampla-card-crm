@@ -8,6 +8,7 @@ export default function EmpresaList({ onSelectCompany }) {
   // Search, Filter and Pagination states
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClosingDay, setSelectedClosingDay] = useState('');
+  const [selectedPaymentDay, setSelectedPaymentDay] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
@@ -36,6 +37,17 @@ export default function EmpresaList({ onSelectCompany }) {
     return Array.from(days).sort((a, b) => a - b);
   }, [empresas, movingCompanyIds]);
 
+  // Extract unique payment days for filters dropdown
+  const paymentDays = useMemo(() => {
+    const days = new Set();
+    empresas.forEach(e => {
+      if (e.STATUS === 'L' && movingCompanyIds.has(e.COD_EMPRESA) && e.DIA_PAGAMENTO) {
+        days.add(e.DIA_PAGAMENTO);
+      }
+    });
+    return Array.from(days).sort((a, b) => a - b);
+  }, [empresas, movingCompanyIds]);
+
   // Filter and Search logic
   const filteredEmpresas = useMemo(() => {
     return empresas.filter(emp => {
@@ -48,6 +60,9 @@ export default function EmpresaList({ onSelectCompany }) {
       // Filter by selected closing day
       if (selectedClosingDay && emp.DIA_FECHAMENTO !== parseInt(selectedClosingDay)) return false;
 
+      // Filter by selected payment day
+      if (selectedPaymentDay && emp.DIA_PAGAMENTO !== parseInt(selectedPaymentDay)) return false;
+
       // Filter by selected payment type
       if (selectedType && emp.TIPO_PAGAMENTO !== selectedType) return false;
 
@@ -59,7 +74,7 @@ export default function EmpresaList({ onSelectCompany }) {
       
       return matchesSearch;
     });
-  }, [empresas, movingCompanyIds, searchTerm, selectedClosingDay, selectedType]);
+  }, [empresas, movingCompanyIds, searchTerm, selectedClosingDay, selectedPaymentDay, selectedType]);
 
   // Sorting logic
   const sortedEmpresas = useMemo(() => {
@@ -77,7 +92,7 @@ export default function EmpresaList({ onSelectCompany }) {
           ? valA.localeCompare(valB) 
           : valB.localeCompare(valA);
       } else {
-        // Numeric sort for COD_EMPRESA and DIA_FECHAMENTO
+        // Numeric sort for COD_EMPRESA, DIA_FECHAMENTO and DIA_PAGAMENTO
         return sortDirection === 'asc' 
           ? valA - valB 
           : valB - valA;
@@ -89,7 +104,7 @@ export default function EmpresaList({ onSelectCompany }) {
   // Reset page when search or filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedClosingDay, selectedType]);
+  }, [searchTerm, selectedClosingDay, selectedPaymentDay, selectedType]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(sortedEmpresas.length / itemsPerPage));
@@ -117,11 +132,11 @@ export default function EmpresaList({ onSelectCompany }) {
 
   const getSortIcon = (field) => {
     if (sortField !== field) {
-      return <ArrowUpDown size={14} style={{ marginLeft: '6px', color: '#94a3b8', verticalAlign: 'middle' }} />;
+      return <ArrowUpDown size={13} style={{ marginLeft: '4px', color: '#94a3b8', verticalAlign: 'middle' }} />;
     }
     return sortDirection === 'asc' 
-      ? <ArrowUp size={14} style={{ marginLeft: '6px', color: '#2563eb', verticalAlign: 'middle' }} />
-      : <ArrowDown size={14} style={{ marginLeft: '6px', color: '#2563eb', verticalAlign: 'middle' }} />;
+      ? <ArrowUp size={13} style={{ marginLeft: '4px', color: '#2563eb', verticalAlign: 'middle' }} />
+      : <ArrowDown size={13} style={{ marginLeft: '4px', color: '#2563eb', verticalAlign: 'middle' }} />;
   };
 
   // CNPJ Formatter helper
@@ -150,10 +165,10 @@ export default function EmpresaList({ onSelectCompany }) {
 
       <div className="table-container">
         {/* Search and Filters bar */}
-        <div className="table-header-controls" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
+        <div className="table-header-controls" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           
           {/* Search box */}
-          <div className="search-wrapper" style={{ flexGrow: 2, minWidth: '260px' }}>
+          <div className="search-wrapper" style={{ flexGrow: 3, minWidth: '240px' }}>
             <Search className="search-icon" />
             <input 
               type="text" 
@@ -165,7 +180,7 @@ export default function EmpresaList({ onSelectCompany }) {
           </div>
 
           {/* Closing Day Filter */}
-          <div style={{ flexGrow: 1, minWidth: '180px' }}>
+          <div style={{ flexGrow: 1, minWidth: '160px' }}>
             <select
               style={{
                 width: '100%',
@@ -182,15 +197,40 @@ export default function EmpresaList({ onSelectCompany }) {
               value={selectedClosingDay}
               onChange={(e) => setSelectedClosingDay(e.target.value)}
             >
-              <option value="">Filtrar por Fechamento (Todos)</option>
+              <option value="">Fec. (Todos)</option>
               {closingDays.map(day => (
-                <option key={day} value={day}>Dia de Fechamento: {day}</option>
+                <option key={day} value={day}>Fec. Dia {day}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Payment Day Filter */}
+          <div style={{ flexGrow: 1, minWidth: '160px' }}>
+            <select
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#fff',
+                color: '#0f172a',
+                fontSize: '14px',
+                fontWeight: '500',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              value={selectedPaymentDay}
+              onChange={(e) => setSelectedPaymentDay(e.target.value)}
+            >
+              <option value="">Pag. (Todos)</option>
+              {paymentDays.map(day => (
+                <option key={day} value={day}>Pag. Dia {day}</option>
               ))}
             </select>
           </div>
 
           {/* Type Filter */}
-          <div style={{ flexGrow: 1, minWidth: '180px' }}>
+          <div style={{ flexGrow: 1, minWidth: '160px' }}>
             <select
               style={{
                 width: '100%',
@@ -207,7 +247,7 @@ export default function EmpresaList({ onSelectCompany }) {
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
             >
-              <option value="">Filtrar por Tipo (Todos)</option>
+              <option value="">Tipo (Todos)</option>
               <option value="Pós-Pago">Pós-Pago</option>
               <option value="Pré-Pago">Pré-Pago</option>
             </select>
@@ -222,7 +262,7 @@ export default function EmpresaList({ onSelectCompany }) {
               <tr>
                 <th 
                   onClick={() => requestSort('COD_EMPRESA')} 
-                  style={{ width: '110px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '100px', cursor: 'pointer', userSelect: 'none' }}
                 >
                   Código {getSortIcon('COD_EMPRESA')}
                 </th>
@@ -241,13 +281,21 @@ export default function EmpresaList({ onSelectCompany }) {
                 </th>
                 <th 
                   onClick={() => requestSort('DIA_FECHAMENTO')} 
-                  style={{ width: '240px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '100px', cursor: 'pointer', userSelect: 'none' }}
+                  title="Fechamento"
                 >
-                  Fechamento / Pagamento {getSortIcon('DIA_FECHAMENTO')}
+                  Fec. {getSortIcon('DIA_FECHAMENTO')}
+                </th>
+                <th 
+                  onClick={() => requestSort('DIA_PAGAMENTO')} 
+                  style={{ width: '100px', cursor: 'pointer', userSelect: 'none' }}
+                  title="Pagamento"
+                >
+                  Pag. {getSortIcon('DIA_PAGAMENTO')}
                 </th>
                 <th 
                   onClick={() => requestSort('TIPO_PAGAMENTO')} 
-                  style={{ width: '130px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '120px', cursor: 'pointer', userSelect: 'none' }}
                 >
                   Tipo {getSortIcon('TIPO_PAGAMENTO')}
                 </th>
@@ -269,8 +317,11 @@ export default function EmpresaList({ onSelectCompany }) {
                     </td>
                     <td>{formatCNPJ(emp.CNPJ)}</td>
                     <td>{emp.MUNICIPIO || 'N/A'}</td>
-                    <td style={{ color: '#475569', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                      Fechamento: Dia {emp.DIA_FECHAMENTO || 'N/A'} | Pagamento: Dia {emp.DIA_PAGAMENTO || 'N/A'}
+                    <td title="Fechamento" style={{ fontWeight: '600', color: '#0f172a' }}>
+                      {emp.DIA_FECHAMENTO ? `Dia ${emp.DIA_FECHAMENTO}` : 'N/A'}
+                    </td>
+                    <td title="Pagamento" style={{ fontWeight: '600', color: '#0f172a' }}>
+                      {emp.DIA_PAGAMENTO ? `Dia ${emp.DIA_PAGAMENTO}` : 'N/A'}
                     </td>
                     <td>
                       <span style={{
@@ -291,7 +342,7 @@ export default function EmpresaList({ onSelectCompany }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
                     Nenhuma empresa encontrada com os filtros informados.
                   </td>
                 </tr>
