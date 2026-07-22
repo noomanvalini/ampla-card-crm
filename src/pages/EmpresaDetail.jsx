@@ -74,6 +74,16 @@ export default function EmpresaDetail({ companyId, onBack }) {
     return padded.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
   };
 
+  // Adesao Date Formatter (YYYY-MM-DD -> DD/MM/YYYY)
+  const formatAdesaoDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   // CEP Formatter
   const formatCEP = (cep) => {
     if (!cep) return '';
@@ -226,9 +236,35 @@ export default function EmpresaDetail({ companyId, onBack }) {
         <div className="profile-card">
           <div className="profile-card-title">
             <MapPin size={20} color="#2563eb" />
-            Endereço
+            Dados Contratuais & Endereço
           </div>
           <div className="info-list">
+            <div className="info-item">
+              <span className="info-label">Data de Adesão</span>
+              <span className="info-value">{formatAdesaoDate(company.DATA_ADESAO)}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Tipo de Faturamento</span>
+              <span className="info-value">
+                <span style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  backgroundColor: company.TIPO_PAGAMENTO === 'Pós-Pago' ? '#eff6ff' : company.TIPO_PAGAMENTO === 'Pré-Pago' ? '#f0fdf4' : '#f1f5f9',
+                  color: company.TIPO_PAGAMENTO === 'Pós-Pago' ? '#2563eb' : company.TIPO_PAGAMENTO === 'Pré-Pago' ? '#16a34a' : '#475569',
+                  border: company.TIPO_PAGAMENTO === 'Pós-Pago' ? '1px solid #bfdbfe' : company.TIPO_PAGAMENTO === 'Pré-Pago' ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                  textTransform: 'uppercase'
+                }}>
+                  {company.TIPO_PAGAMENTO || 'N/A'}
+                </span>
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Período de Fechamento</span>
+              <span className="info-value">{company.DIA_FECHAMENTO ? `Dia ${company.DIA_FECHAMENTO} de cada mês` : 'N/A'}</span>
+            </div>
+            <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '8px 0' }} />
             <div className="info-item">
               <span className="info-label">Logradouro</span>
               <span className="info-value">{company.LOGRADOURO || 'N/A'}</span>
