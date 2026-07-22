@@ -7,14 +7,15 @@ import DashboardEstabelecimentos from './pages/DashboardEstabelecimentos';
 import EstabelecimentoList from './pages/EstabelecimentoList';
 import MovimentacaoCidade from './pages/MovimentacaoCidade';
 import MovimentacaoCidadeEmpresa from './pages/MovimentacaoCidadeEmpresa';
+import ExportarCsv from './pages/ExportarCsv';
 import { 
   LayoutDashboard, 
   Building2, 
-  RotateCcw,
   Store,
   Layers,
   ListCollapse,
-  MapPin
+  MapPin,
+  FileDown
 } from 'lucide-react';
 
 export default function App() {
@@ -150,6 +151,21 @@ export default function App() {
               </li>
             </ul>
           </div>
+
+          {/* Utility module */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+            <ul className="sidebar-menu">
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'exportar' ? 'active' : ''}`}
+                  onClick={() => navigate('exportar')}
+                >
+                  <FileDown className="menu-icon" />
+                  Exportar Dados
+                </div>
+              </li>
+            </ul>
+          </div>
         </nav>
       </aside>
 
@@ -184,6 +200,10 @@ export default function App() {
 
         {currentPage === 'movimentacao_cidade_empresa' && (
           <MovimentacaoCidadeEmpresa />
+        )}
+
+        {currentPage === 'exportar' && (
+          <ExportarCsv />
         )}
       </main>
     </div>
