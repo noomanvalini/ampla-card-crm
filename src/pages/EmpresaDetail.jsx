@@ -264,6 +264,10 @@ export default function EmpresaDetail({ companyId, onBack }) {
               <span className="info-label">Período de Fechamento</span>
               <span className="info-value">{company.DIA_FECHAMENTO ? `Dia ${company.DIA_FECHAMENTO} de cada mês` : 'N/A'}</span>
             </div>
+            <div className="info-item">
+              <span className="info-label">Dia de Pagamento</span>
+              <span className="info-value">{company.DIA_PAGAMENTO ? `Dia ${company.DIA_PAGAMENTO} de cada mês` : 'N/A'}</span>
+            </div>
             <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '8px 0' }} />
             <div className="info-item">
               <span className="info-label">Logradouro</span>

@@ -241,9 +241,9 @@ export default function EmpresaList({ onSelectCompany }) {
                 </th>
                 <th 
                   onClick={() => requestSort('DIA_FECHAMENTO')} 
-                  style={{ width: '130px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '240px', cursor: 'pointer', userSelect: 'none' }}
                 >
-                  Fechamento {getSortIcon('DIA_FECHAMENTO')}
+                  Fechamento / Pagamento {getSortIcon('DIA_FECHAMENTO')}
                 </th>
                 <th 
                   onClick={() => requestSort('TIPO_PAGAMENTO')} 
@@ -269,8 +269,8 @@ export default function EmpresaList({ onSelectCompany }) {
                     </td>
                     <td>{formatCNPJ(emp.CNPJ)}</td>
                     <td>{emp.MUNICIPIO || 'N/A'}</td>
-                    <td style={{ fontWeight: '600', color: '#0f172a' }}>
-                      {emp.DIA_FECHAMENTO ? `Dia ${emp.DIA_FECHAMENTO}` : 'N/A'}
+                    <td style={{ color: '#475569', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                      Fechamento: Dia {emp.DIA_FECHAMENTO || 'N/A'} | Pagamento: Dia {emp.DIA_PAGAMENTO || 'N/A'}
                     </td>
                     <td>
                       <span style={{
