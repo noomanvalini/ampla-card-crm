@@ -10,6 +10,7 @@ export default function EmpresaList({ onSelectCompany }) {
   const [selectedClosingDay, setSelectedClosingDay] = useState('');
   const [selectedPaymentDay, setSelectedPaymentDay] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [selectedMovementMonth, setSelectedMovementMonth] = useState('2026-jun');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
@@ -48,33 +49,49 @@ export default function EmpresaList({ onSelectCompany }) {
     return Array.from(days).sort((a, b) => a - b);
   }, [empresas, movingCompanyIds]);
 
+  // Calculate movement sums per company for the selected reference month
+  const monthlySums = useMemo(() => {
+    const sums = {};
+    (faturamentos || []).forEach(f => {
+      if (f.MES_REFERENCIA === selectedMovementMonth) {
+        sums[f.COD_EMPRESA] = (sums[f.COD_EMPRESA] || 0) + (f.VALOR || 0);
+      }
+    });
+    return sums;
+  }, [faturamentos, selectedMovementMonth]);
+
   // Filter and Search logic
   const filteredEmpresas = useMemo(() => {
-    return empresas.filter(emp => {
-      // Exclude cancelled (C) and suspended (S) companies - show only Active (L)
-      if (emp.STATUS !== 'L') return false;
+    return empresas
+      .filter(emp => {
+        // Exclude cancelled (C) and suspended (S) companies - show only Active (L)
+        if (emp.STATUS !== 'L') return false;
 
-      // Show ONLY companies with active movements/billing (excluding July)
-      if (!movingCompanyIds.has(emp.COD_EMPRESA)) return false;
+        // Show ONLY companies with active movements/billing (excluding July)
+        if (!movingCompanyIds.has(emp.COD_EMPRESA)) return false;
 
-      // Filter by selected closing day
-      if (selectedClosingDay && emp.DIA_FECHAMENTO !== parseInt(selectedClosingDay)) return false;
+        // Filter by selected closing day
+        if (selectedClosingDay && emp.DIA_FECHAMENTO !== parseInt(selectedClosingDay)) return false;
 
-      // Filter by selected payment day
-      if (selectedPaymentDay && emp.DIA_PAGAMENTO !== parseInt(selectedPaymentDay)) return false;
+        // Filter by selected payment day
+        if (selectedPaymentDay && emp.DIA_PAGAMENTO !== parseInt(selectedPaymentDay)) return false;
 
-      // Filter by selected payment type
-      if (selectedType && emp.TIPO_PAGAMENTO !== selectedType) return false;
+        // Filter by selected payment type
+        if (selectedType && emp.TIPO_PAGAMENTO !== selectedType) return false;
 
-      // Search term match (CNPJ, Fantasia, Razao)
-      const matchesSearch = 
-        (emp.FANTASIA || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (emp.RAZAO || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (emp.CNPJ || '').includes(searchTerm);
-      
-      return matchesSearch;
-    });
-  }, [empresas, movingCompanyIds, searchTerm, selectedClosingDay, selectedPaymentDay, selectedType]);
+        // Search term match (CNPJ, Fantasia, Razao) - CNPJ search capability is preserved
+        const matchesSearch = 
+          (emp.FANTASIA || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (emp.RAZAO || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (emp.CNPJ || '').includes(searchTerm);
+        
+        return matchesSearch;
+      })
+      .map(emp => ({
+        ...emp,
+        VALOR_MOVIMENTACAO: monthlySums[emp.COD_EMPRESA] || 0
+      }));
+  }, [empresas, movingCompanyIds, searchTerm, selectedClosingDay, selectedPaymentDay, selectedType, monthlySums]);
 
   // Sorting logic
   const sortedEmpresas = useMemo(() => {
@@ -84,15 +101,15 @@ export default function EmpresaList({ onSelectCompany }) {
       let valB = b[sortField];
       
       // Fallback for nulls or undefined
-      if (valA === undefined || valA === null) valA = (typeof valB === 'number') ? 999 : '';
-      if (valB === undefined || valB === null) valB = (typeof valA === 'number') ? 999 : '';
+      if (valA === undefined || valA === null) valA = (typeof valB === 'number') ? 0 : '';
+      if (valB === undefined || valB === null) valB = (typeof valA === 'number') ? 0 : '';
       
       if (typeof valA === 'string') {
         return sortDirection === 'asc' 
           ? valA.localeCompare(valB) 
           : valB.localeCompare(valA);
       } else {
-        // Numeric sort for COD_EMPRESA, DIA_FECHAMENTO and DIA_PAGAMENTO
+        // Numeric sort for COD_EMPRESA, DIA_FECHAMENTO, DIA_PAGAMENTO, and VALOR_MOVIMENTACAO
         return sortDirection === 'asc' 
           ? valA - valB 
           : valB - valA;
@@ -101,10 +118,10 @@ export default function EmpresaList({ onSelectCompany }) {
     return sorted;
   }, [filteredEmpresas, sortField, sortDirection]);
 
-  // Reset page when search or filters change
+  // Reset page when search, month, or filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedClosingDay, selectedPaymentDay, selectedType]);
+  }, [searchTerm, selectedClosingDay, selectedPaymentDay, selectedType, selectedMovementMonth]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(sortedEmpresas.length / itemsPerPage));
@@ -139,19 +156,20 @@ export default function EmpresaList({ onSelectCompany }) {
       : <ArrowDown size={13} style={{ marginLeft: '4px', color: '#2563eb', verticalAlign: 'middle' }} />;
   };
 
-  // CNPJ Formatter helper
-  const formatCNPJ = (cnpj) => {
-    if (!cnpj) return '';
-    const clean = cnpj.replace(/\D/g, '');
-    if (clean.length === 0) return '';
-    
-    if (clean.length <= 11) {
-      const padded = clean.padStart(11, '0');
-      return padded.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
-    }
-    
-    const padded = clean.padStart(14, '0');
-    return padded.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+  // Currency Formatter
+  const formatCurrency = (val) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+  };
+
+  // Month label helper
+  const getMonthLabel = (m) => {
+    const labels = {
+      '2026-mar': 'Março/2026',
+      '2026-abr': 'Abril/2026',
+      '2026-mai': 'Maio/2026',
+      '2026-jun': 'Junho/2026'
+    };
+    return labels[m] || m;
   };
 
   return (
@@ -173,14 +191,39 @@ export default function EmpresaList({ onSelectCompany }) {
             <input 
               type="text" 
               className="search-input" 
-              placeholder="Buscar por Nome Fantasia, Razão ou CNPJ..." 
+              placeholder="Buscar por Fantasia, Razão ou CNPJ..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          {/* Closing Day Filter */}
+          {/* Movement Month selector - highlight controller */}
           <div style={{ flexGrow: 1, minWidth: '160px' }}>
+            <select
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: '1px solid #bfdbfe',
+                backgroundColor: '#eff6ff',
+                color: '#2563eb',
+                fontSize: '14px',
+                fontWeight: '600',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              value={selectedMovementMonth}
+              onChange={(e) => setSelectedMovementMonth(e.target.value)}
+            >
+              <option value="2026-jun">Mês Ref: Junho/2026</option>
+              <option value="2026-mai">Mês Ref: Maio/2026</option>
+              <option value="2026-abr">Mês Ref: Abril/2026</option>
+              <option value="2026-mar">Mês Ref: Março/2026</option>
+            </select>
+          </div>
+
+          {/* Closing Day Filter */}
+          <div style={{ flexGrow: 1, minWidth: '130px' }}>
             <select
               style={{
                 width: '100%',
@@ -205,7 +248,7 @@ export default function EmpresaList({ onSelectCompany }) {
           </div>
 
           {/* Payment Day Filter */}
-          <div style={{ flexGrow: 1, minWidth: '160px' }}>
+          <div style={{ flexGrow: 1, minWidth: '130px' }}>
             <select
               style={{
                 width: '100%',
@@ -230,7 +273,7 @@ export default function EmpresaList({ onSelectCompany }) {
           </div>
 
           {/* Type Filter */}
-          <div style={{ flexGrow: 1, minWidth: '160px' }}>
+          <div style={{ flexGrow: 1, minWidth: '130px' }}>
             <select
               style={{
                 width: '100%',
@@ -262,7 +305,7 @@ export default function EmpresaList({ onSelectCompany }) {
               <tr>
                 <th 
                   onClick={() => requestSort('COD_EMPRESA')} 
-                  style={{ width: '100px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '90px', cursor: 'pointer', userSelect: 'none' }}
                 >
                   Código {getSortIcon('COD_EMPRESA')}
                 </th>
@@ -272,7 +315,13 @@ export default function EmpresaList({ onSelectCompany }) {
                 >
                   Nome Fantasia {getSortIcon('FANTASIA')}
                 </th>
-                <th>CNPJ</th>
+                <th 
+                  onClick={() => requestSort('VALOR_MOVIMENTACAO')} 
+                  style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}
+                  title={`Valor movimentado em ${getMonthLabel(selectedMovementMonth)}`}
+                >
+                  Movimentação {getSortIcon('VALOR_MOVIMENTACAO')}
+                </th>
                 <th 
                   onClick={() => requestSort('MUNICIPIO')} 
                   style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -281,21 +330,21 @@ export default function EmpresaList({ onSelectCompany }) {
                 </th>
                 <th 
                   onClick={() => requestSort('DIA_FECHAMENTO')} 
-                  style={{ width: '100px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '90px', cursor: 'pointer', userSelect: 'none' }}
                   title="Fechamento"
                 >
                   Fec. {getSortIcon('DIA_FECHAMENTO')}
                 </th>
                 <th 
                   onClick={() => requestSort('DIA_PAGAMENTO')} 
-                  style={{ width: '100px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '90px', cursor: 'pointer', userSelect: 'none' }}
                   title="Pagamento"
                 >
                   Pag. {getSortIcon('DIA_PAGAMENTO')}
                 </th>
                 <th 
                   onClick={() => requestSort('TIPO_PAGAMENTO')} 
-                  style={{ width: '120px', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ width: '110px', cursor: 'pointer', userSelect: 'none' }}
                 >
                   Tipo {getSortIcon('TIPO_PAGAMENTO')}
                 </th>
@@ -315,7 +364,9 @@ export default function EmpresaList({ onSelectCompany }) {
                         {emp.RAZAO}
                       </div>
                     </td>
-                    <td>{formatCNPJ(emp.CNPJ)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: '700', color: '#0f172a' }}>
+                      {formatCurrency(emp.VALOR_MOVIMENTACAO)}
+                    </td>
                     <td>{emp.MUNICIPIO || 'N/A'}</td>
                     <td title="Fechamento" style={{ fontWeight: '600', color: '#0f172a' }}>
                       {emp.DIA_FECHAMENTO ? `Dia ${emp.DIA_FECHAMENTO}` : 'N/A'}
