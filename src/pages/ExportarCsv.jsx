@@ -40,7 +40,10 @@ export default function ExportarCsv() {
         'COD_BANDEIRA', 
         'NOME_BANDEIRA',
         'STATUS', 
-        'NUMERO_CARTOES_ATIVOS'
+        'NUMERO_CARTOES_ATIVOS',
+        'QTD_TITULARES',
+        'QTD_DEPENDENTES',
+        'TOTAL_CARTOES'
       ];
 
       const rows = activeMovingCompanies.map(e => [
@@ -61,7 +64,10 @@ export default function ExportarCsv() {
         e.COD_BANDEIRA || '',
         getBandeiraName(e.COD_BANDEIRA),
         e.STATUS || '',
-        e.NUMERO_CARTOES_ATIVOS || 0
+        e.NUMERO_CARTOES_ATIVOS || 0,
+        e.QTD_TITULARES || 0,
+        e.QTD_DEPENDENTES || 0,
+        e.TOTAL_CARTOES || 0
       ]);
 
       downloadCSV('empresas_consolidadas.csv', headers, rows);

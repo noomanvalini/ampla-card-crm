@@ -302,6 +302,34 @@ export default function EmpresaDetail({ companyId, onBack }) {
           </div>
         </div>
 
+        {/* Cards Breakdown Card */}
+        <div className="profile-card">
+          <div className="profile-card-title">
+            <CreditCard size={20} color="#2563eb" />
+            Distribuição de Cartões
+          </div>
+          <div className="info-list">
+            <div className="info-item">
+              <span className="info-label">Total de Cartões</span>
+              <span className="info-value" style={{ fontWeight: '700', color: '#0f172a' }}>
+                {company.TOTAL_CARTOES !== undefined ? company.TOTAL_CARTOES : (company.NUMERO_CARTOES_ATIVOS || 0)}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Cartões Titulares</span>
+              <span className="info-value" style={{ fontWeight: '600', color: '#475569' }}>
+                {company.QTD_TITULARES || 0}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Cartões Dependentes</span>
+              <span className="info-value" style={{ fontWeight: '600', color: '#475569' }}>
+                {company.QTD_DEPENDENTES || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Contacts (Phones & Emails) */}
         <div className="profile-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
