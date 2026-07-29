@@ -8,6 +8,7 @@ import EstabelecimentoList from './pages/EstabelecimentoList';
 import MovimentacaoCidade from './pages/MovimentacaoCidade';
 import MovimentacaoCidadeEmpresa from './pages/MovimentacaoCidadeEmpresa';
 import ExportarCsv from './pages/ExportarCsv';
+import BandeiraList from './pages/BandeiraList';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -15,7 +16,8 @@ import {
   Layers,
   ListCollapse,
   MapPin,
-  FileDown
+  FileDown,
+  Flag
 } from 'lucide-react';
 
 export default function App() {
@@ -152,6 +154,24 @@ export default function App() {
             </ul>
           </div>
 
+          {/* Bandeiras Module */}
+          <div>
+            <div style={{ padding: '0 12px 8px', fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', letterSpacing: '0.5px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+              Módulo Bandeiras
+            </div>
+            <ul className="sidebar-menu">
+              <li>
+                <div 
+                  className={`menu-item ${currentPage === 'bandeiras' ? 'active' : ''}`}
+                  onClick={() => navigate('bandeiras')}
+                >
+                  <Flag className="menu-icon" />
+                  Lista de Bandeiras
+                </div>
+              </li>
+            </ul>
+          </div>
+
           {/* Utility module */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
             <ul className="sidebar-menu">
@@ -200,6 +220,10 @@ export default function App() {
 
         {currentPage === 'movimentacao_cidade_empresa' && (
           <MovimentacaoCidadeEmpresa />
+        )}
+
+        {currentPage === 'bandeiras' && (
+          <BandeiraList />
         )}
 
         {currentPage === 'exportar' && (
