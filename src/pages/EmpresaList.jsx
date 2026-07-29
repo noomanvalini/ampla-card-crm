@@ -79,12 +79,16 @@ export default function EmpresaList({ onSelectCompany }) {
         // Filter by selected payment type
         if (selectedType && emp.TIPO_PAGAMENTO !== selectedType) return false;
 
-        const cleanSearchTerm = searchTerm.replace('#', '').trim();
-        const matchesSearch = 
-          (emp.FANTASIA || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (emp.RAZAO || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (emp.CNPJ || '').includes(searchTerm) ||
-          String(emp.COD_EMPRESA).includes(cleanSearchTerm);
+        let matchesSearch = false;
+        if (searchTerm.trim().startsWith('#')) {
+          const cleanCode = searchTerm.replace('#', '').trim();
+          matchesSearch = String(emp.COD_EMPRESA).includes(cleanCode);
+        } else {
+          matchesSearch = 
+            (emp.FANTASIA || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (emp.RAZAO || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (emp.CNPJ || '').includes(searchTerm);
+        }
         
         return matchesSearch;
       })
