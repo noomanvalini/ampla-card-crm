@@ -79,11 +79,12 @@ export default function EmpresaList({ onSelectCompany }) {
         // Filter by selected payment type
         if (selectedType && emp.TIPO_PAGAMENTO !== selectedType) return false;
 
-        // Search term match (CNPJ, Fantasia, Razao) - CNPJ search capability is preserved
+        const cleanSearchTerm = searchTerm.replace('#', '').trim();
         const matchesSearch = 
           (emp.FANTASIA || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
           (emp.RAZAO || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (emp.CNPJ || '').includes(searchTerm);
+          (emp.CNPJ || '').includes(searchTerm) ||
+          String(emp.COD_EMPRESA).includes(cleanSearchTerm);
         
         return matchesSearch;
       })
@@ -191,7 +192,7 @@ export default function EmpresaList({ onSelectCompany }) {
             <input 
               type="text" 
               className="search-input" 
-              placeholder="Buscar por Fantasia, Razão ou CNPJ..." 
+              placeholder="Buscar por ID, Fantasia, Razão ou CNPJ..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
