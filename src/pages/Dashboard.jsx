@@ -42,6 +42,70 @@ export default function Dashboard({ onNavigate }) {
     return movingIds;
   }, [empresas, faturamentos]);
 
+  // Helper map for company contract information (COD_BANDEIRA and TIPO_PAGAMENTO)
+  const companyInfoMap = useMemo(() => {
+    const map = new Map();
+    empresas.forEach(e => {
+      map.set(e.COD_EMPRESA, {
+        COD_BANDEIRA: e.COD_BANDEIRA,
+        TIPO_PAGAMENTO: e.TIPO_PAGAMENTO
+      });
+    });
+    return map;
+  }, [empresas]);
+
+  // Calculations for proportions and values split by Alimentação/Convênio and Pré/Pós Pago
+  const cardMetrics = useMemo(() => {
+    let alimentacaoPre = 0;
+    let alimentacaoPos = 0;
+    let convenioPre = 0;
+    let convenioPos = 0;
+
+    faturamentos.forEach(f => {
+      if (f.MES_REFERENCIA === selectedMonth && activeCompanyIds.has(f.COD_EMPRESA)) {
+        const comp = companyInfoMap.get(f.COD_EMPRESA);
+        if (!comp) return;
+
+        const isAlimentacao = comp.COD_BANDEIRA === '2';
+        const isPre = comp.TIPO_PAGAMENTO === 'Pré-Pago';
+
+        if (isAlimentacao) {
+          if (isPre) {
+            alimentacaoPre += (f.VALOR || 0);
+          } else {
+            alimentacaoPos += (f.VALOR || 0);
+          }
+        } else {
+          if (isPre) {
+            convenioPre += (f.VALOR || 0);
+          } else {
+            convenioPos += (f.VALOR || 0);
+          }
+        }
+      }
+    });
+
+    const totalAlimentacao = alimentacaoPre + alimentacaoPos;
+    const totalConvenio = convenioPre + convenioPos;
+
+    const alimentacaoPrePct = totalAlimentacao > 0 ? (alimentacaoPre / totalAlimentacao) * 100 : 0;
+    const alimentacaoPosPct = totalAlimentacao > 0 ? (alimentacaoPos / totalAlimentacao) * 100 : 0;
+
+    const convenioPrePct = totalConvenio > 0 ? (convenioPre / totalConvenio) * 100 : 0;
+    const convenioPosPct = totalConvenio > 0 ? (convenioPos / totalConvenio) * 100 : 0;
+
+    return {
+      alimentacaoPre,
+      alimentacaoPos,
+      convenioPre,
+      convenioPos,
+      alimentacaoPrePct,
+      alimentacaoPosPct,
+      convenioPrePct,
+      convenioPosPct
+    };
+  }, [faturamentos, selectedMonth, activeCompanyIds, companyInfoMap]);
+
   // 1. Calculations for KPIs
   const kpis = useMemo(() => {
     // Total Active Companies with movements
@@ -226,6 +290,131 @@ export default function Dashboard({ onNavigate }) {
             <CreditCard size={24} />
           </div>
         </div>
+      </div>
+
+      {/* Detalhamento por Tipo e Bandeira */}
+      <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        Detalhamento por Bandeira & Tipo de Faturamento ({monthNames[selectedMonth]})
+      </h2>
+
+      <div className="kpi-grid" style={{ marginBottom: '32px', gap: '20px' }}>
+        
+        {/* Card 1: Proporcional Alimentação */}
+        <div className="kpi-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', margin: 0, letterSpacing: '0.5px' }}>
+              Alimentação (Proporção)
+            </h3>
+            <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#eff6ff', color: '#2563eb', textTransform: 'uppercase' }}>
+              % Faturado
+            </span>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#475569', fontWeight: '500' }}>
+                <span>Pré-Pago</span>
+                <span style={{ fontWeight: '700', color: '#0f172a' }}>{cardMetrics.alimentacaoPrePct.toFixed(1)}%</span>
+              </div>
+              <div style={{ height: '6px', width: '100%', backgroundColor: '#f1f5f9', borderRadius: '3px', marginTop: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${cardMetrics.alimentacaoPrePct}%`, backgroundColor: '#10b981', borderRadius: '3px' }} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#475569', fontWeight: '500' }}>
+                <span>Pós-Pago</span>
+                <span style={{ fontWeight: '700', color: '#0f172a' }}>{cardMetrics.alimentacaoPosPct.toFixed(1)}%</span>
+              </div>
+              <div style={{ height: '6px', width: '100%', backgroundColor: '#f1f5f9', borderRadius: '3px', marginTop: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${cardMetrics.alimentacaoPosPct}%`, backgroundColor: '#3b82f6', borderRadius: '3px' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Proporcional Convênio */}
+        <div className="kpi-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', margin: 0, letterSpacing: '0.5px' }}>
+              Convênio (Proporção)
+            </h3>
+            <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f0fdf4', color: '#16a34a', textTransform: 'uppercase' }}>
+              % Faturado
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#475569', fontWeight: '500' }}>
+                <span>Pré-Pago</span>
+                <span style={{ fontWeight: '700', color: '#0f172a' }}>{cardMetrics.convenioPrePct.toFixed(1)}%</span>
+              </div>
+              <div style={{ height: '6px', width: '100%', backgroundColor: '#f1f5f9', borderRadius: '3px', marginTop: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${cardMetrics.convenioPrePct}%`, backgroundColor: '#10b981', borderRadius: '3px' }} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#475569', fontWeight: '500' }}>
+                <span>Pós-Pago</span>
+                <span style={{ fontWeight: '700', color: '#0f172a' }}>{cardMetrics.convenioPosPct.toFixed(1)}%</span>
+              </div>
+              <div style={{ height: '6px', width: '100%', backgroundColor: '#f1f5f9', borderRadius: '3px', marginTop: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${cardMetrics.convenioPosPct}%`, backgroundColor: '#3b82f6', borderRadius: '3px' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Valores Alimentação */}
+        <div className="kpi-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', margin: 0, letterSpacing: '0.5px' }}>
+              Valores Alimentação
+            </h3>
+            <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#fffbeb', color: '#d97706', textTransform: 'uppercase' }}>
+              Financ. R$
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>Pré-Pago</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#10b981' }}>{formatCurrency(cardMetrics.alimentacaoPre)}</span>
+            </div>
+            <div style={{ height: '1px', backgroundColor: '#f1f5f9' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>Pós-Pago</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#3b82f6' }}>{formatCurrency(cardMetrics.alimentacaoPos)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Valores Convênio */}
+        <div className="kpi-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: '700', margin: 0, letterSpacing: '0.5px' }}>
+              Valores Convênio
+            </h3>
+            <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#fdf2f8', color: '#db2777', textTransform: 'uppercase' }}>
+              Financ. R$
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>Pré-Pago</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#10b981' }}>{formatCurrency(cardMetrics.convenioPre)}</span>
+            </div>
+            <div style={{ height: '1px', backgroundColor: '#f1f5f9' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>Pós-Pago</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#3b82f6' }}>{formatCurrency(cardMetrics.convenioPos)}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Monthly Billing Chart (Full Width) */}
