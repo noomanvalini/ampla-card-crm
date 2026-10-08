@@ -109,6 +109,22 @@ export default function EmpresaDetail({ companyId, onBack }) {
     return num;
   };
 
+  const getPhoneType = (tel) => {
+    if (!tel) return '';
+    const clean = (tel.NUMERO || '').replace(/\D/g, '');
+    if (clean.length === 9 || (clean.length === 8 && clean.startsWith('9')) || tel.COD_TIPO === '1') {
+      return 'Celular';
+    }
+    if (tel.COD_TIPO === '2' || clean.length === 8) {
+      return 'Comercial';
+    }
+    if (tel.COD_TIPO === '3') return 'Fixo';
+    if (tel.COD_TIPO === '4') return 'Recado';
+    if (tel.COD_TIPO === '5') return 'Fax';
+    if (tel.COD_TIPO === '6') return 'WhatsApp';
+    return tel.COD_TIPO ? `Tipo ${tel.COD_TIPO}` : 'Principal';
+  };
+
   // Billing Chart Data
   const chartData = useMemo(() => {
     const months = ['2026-mar', '2026-abr', '2026-mai', '2026-jun'];
@@ -353,7 +369,7 @@ export default function EmpresaDetail({ companyId, onBack }) {
                           {formatPhone(t.DDD, t.NUMERO)}
                         </a>
                       </div>
-                      <div className="phone-type">{t.COD_TIPO === '2' ? 'Celular' : t.COD_TIPO === '1' ? 'Fixo' : 'Outro'}</div>
+                      <div className="phone-type">{getPhoneType(t)}</div>
                     </div>
                   </div>
                 ))}

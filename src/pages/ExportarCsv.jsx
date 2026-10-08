@@ -3,7 +3,58 @@ import { useDb } from '../context/DbContext';
 import { FileDown, Download, Building2, Store } from 'lucide-react';
 
 export default function ExportarCsv() {
-  const { empresas, faturamentos, estabelecimentos, getBandeiraName } = useDb();
+  const { empresas, telefones, emails, faturamentos, estabelecimentos, getBandeiraName } = useDb();
+
+  // Helper maps for phones and emails by company
+  const phonesByComp = useMemo(() => {
+    const map = new Map();
+    (telefones || []).forEach(t => {
+      if (!map.has(t.COD_EMPRESA)) map.set(t.COD_EMPRESA, []);
+      map.get(t.COD_EMPRESA).push(t);
+    });
+    return map;
+  }, [telefones]);
+
+  const emailsByComp = useMemo(() => {
+    const map = new Map();
+    (emails || []).forEach(em => {
+      if (!map.has(em.COD_EMPRESA)) map.set(em.COD_EMPRESA, []);
+      map.get(em.COD_EMPRESA).push(em);
+    });
+    return map;
+  }, [emails]);
+
+  const formatPhone = (ddd, num) => {
+    const cleanDdd = (ddd || '').replace(/\D/g, '');
+    const cleanNum = (num || '').replace(/\D/g, '');
+    if (!cleanNum) return num || '';
+    if (cleanDdd) {
+      if (cleanNum.length === 9) {
+        return `(${cleanDdd}) ${cleanNum.substring(0, 5)}-${cleanNum.substring(5)}`;
+      }
+      if (cleanNum.length === 8) {
+        return `(${cleanDdd}) ${cleanNum.substring(0, 4)}-${cleanNum.substring(4)}`;
+      }
+      return `(${cleanDdd}) ${num}`;
+    }
+    return num;
+  };
+
+  const getPhoneType = (tel) => {
+    if (!tel) return '';
+    const clean = (tel.NUMERO || '').replace(/\D/g, '');
+    if (clean.length === 9 || (clean.length === 8 && clean.startsWith('9')) || tel.COD_TIPO === '1') {
+      return 'Celular';
+    }
+    if (tel.COD_TIPO === '2' || clean.length === 8) {
+      return 'Comercial';
+    }
+    if (tel.COD_TIPO === '3') return 'Fixo';
+    if (tel.COD_TIPO === '4') return 'Recado';
+    if (tel.COD_TIPO === '5') return 'Fax';
+    if (tel.COD_TIPO === '6') return 'WhatsApp';
+    return tel.COD_TIPO ? `Tipo ${tel.COD_TIPO}` : 'Principal';
+  };
 
   // 1. Filtered active companies with movements (excluding July)
   const activeMovingCompanies = useMemo(() => {
@@ -22,6 +73,26 @@ export default function ExportarCsv() {
   // Helper: export CSV file
   const handleExportCSV = (type) => {
     if (type === 'empresas') {
+      // Dynamically calculate the max number of phones and emails among companies being exported
+      const maxPhones = Math.max(
+        ...activeMovingCompanies.map(e => (phonesByComp.get(e.COD_EMPRESA) || []).length),
+        1
+      );
+      const maxEmails = Math.max(
+        ...activeMovingCompanies.map(e => (emailsByComp.get(e.COD_EMPRESA) || []).length),
+        1
+      );
+
+      const phoneHeaders = [];
+      for (let i = 1; i <= maxPhones; i++) {
+        phoneHeaders.push(`Contato telefone ${i}`, `Tipo de contato ${i}`);
+      }
+
+      const emailHeaders = [];
+      for (let i = 1; i <= maxEmails; i++) {
+        emailHeaders.push(`Contato email ${i}`, `Nome E-mail ${i}`);
+      }
+
       const headers = [
         'COD_EMPRESA', 
         'RAZAO_SOCIAL', 
@@ -43,32 +114,55 @@ export default function ExportarCsv() {
         'NUMERO_CARTOES_ATIVOS',
         'QTD_TITULARES',
         'QTD_DEPENDENTES',
-        'TOTAL_CARTOES'
+        'TOTAL_CARTOES',
+        ...phoneHeaders,
+        ...emailHeaders
       ];
 
-      const rows = activeMovingCompanies.map(e => [
-        e.COD_EMPRESA,
-        e.RAZAO || '',
-        e.FANTASIA || '',
-        e.CNPJ || '',
-        e.DATA_ADESAO || '',
-        e.TIPO_PAGAMENTO || '',
-        e.DIA_FECHAMENTO || '',
-        e.DIA_PAGAMENTO || '',
-        e.LOGRADOURO || '',
-        e.NUMERO || '',
-        e.COMPLEMENTO || '',
-        e.BAIRRO || '',
-        e.MUNICIPIO || '',
-        e.CEP || '',
-        e.COD_BANDEIRA || '',
-        getBandeiraName(e.COD_BANDEIRA),
-        e.STATUS || '',
-        e.NUMERO_CARTOES_ATIVOS || 0,
-        e.QTD_TITULARES || 0,
-        e.QTD_DEPENDENTES || 0,
-        e.TOTAL_CARTOES || 0
-      ]);
+      const rows = activeMovingCompanies.map(e => {
+        const pList = phonesByComp.get(e.COD_EMPRESA) || [];
+        const eList = emailsByComp.get(e.COD_EMPRESA) || [];
+
+        const phoneCells = [];
+        for (let i = 0; i < maxPhones; i++) {
+          const p = pList[i];
+          phoneCells.push(p ? formatPhone(p.DDD, p.NUMERO) : '');
+          phoneCells.push(p ? getPhoneType(p) : '');
+        }
+
+        const emailCells = [];
+        for (let i = 0; i < maxEmails; i++) {
+          const em = eList[i];
+          emailCells.push(em ? (em.EMAIL || '') : '');
+          emailCells.push(em ? (em.NOME || '') : '');
+        }
+
+        return [
+          e.COD_EMPRESA,
+          e.RAZAO || '',
+          e.FANTASIA || '',
+          e.CNPJ || '',
+          e.DATA_ADESAO || '',
+          e.TIPO_PAGAMENTO || '',
+          e.DIA_FECHAMENTO || '',
+          e.DIA_PAGAMENTO || '',
+          e.LOGRADOURO || '',
+          e.NUMERO || '',
+          e.COMPLEMENTO || '',
+          e.BAIRRO || '',
+          e.MUNICIPIO || '',
+          e.CEP || '',
+          e.COD_BANDEIRA || '',
+          getBandeiraName(e.COD_BANDEIRA),
+          e.STATUS || '',
+          e.NUMERO_CARTOES_ATIVOS || 0,
+          e.QTD_TITULARES || 0,
+          e.QTD_DEPENDENTES || 0,
+          e.TOTAL_CARTOES || 0,
+          ...phoneCells,
+          ...emailCells
+        ];
+      });
 
       downloadCSV('empresas_consolidadas.csv', headers, rows);
     } 
@@ -158,7 +252,7 @@ export default function ExportarCsv() {
               <div style={{ marginTop: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Colunas incluídas:</span>
                 <code style={{ fontSize: '11px', color: '#475569', wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                  COD_EMPRESA, RAZAO_SOCIAL, NOME_FANTASIA, CNPJ, MUNICIPIO, COD_BANDEIRA, NOME_BANDEIRA, CARTOES_ATIVOS...
+                  COD_EMPRESA, RAZAO_SOCIAL, NOME_FANTASIA, CNPJ, MUNICIPIO, CONTATOS (TELEFONES E E-MAILS), CARTOES_ATIVOS...
                 </code>
               </div>
             </div>
