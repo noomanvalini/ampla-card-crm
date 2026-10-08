@@ -24,6 +24,30 @@ export default function ExportarCsv() {
     return map;
   }, [emails]);
 
+  // Helper map for monthly billing by company (Março, Abril, Maio, Junho)
+  const billingByComp = useMemo(() => {
+    const map = new Map();
+    (faturamentos || []).forEach(f => {
+      if (['2026-mar', '2026-abr', '2026-mai', '2026-jun'].includes(f.MES_REFERENCIA)) {
+        if (!map.has(f.COD_EMPRESA)) {
+          map.set(f.COD_EMPRESA, {
+            '2026-mar': 0,
+            '2026-abr': 0,
+            '2026-mai': 0,
+            '2026-jun': 0
+          });
+        }
+        const b = map.get(f.COD_EMPRESA);
+        b[f.MES_REFERENCIA] = (b[f.MES_REFERENCIA] || 0) + (f.VALOR || 0);
+      }
+    });
+    return map;
+  }, [faturamentos]);
+
+  const formatDecimal = (val) => {
+    return (val || 0).toFixed(2).replace('.', ',');
+  };
+
   const formatPhone = (ddd, num) => {
     const cleanDdd = (ddd || '').replace(/\D/g, '');
     const cleanNum = (num || '').replace(/\D/g, '');
@@ -115,6 +139,10 @@ export default function ExportarCsv() {
         'QTD_TITULARES',
         'QTD_DEPENDENTES',
         'TOTAL_CARTOES',
+        'Março',
+        'Abril',
+        'Maio',
+        'Junho',
         ...phoneHeaders,
         ...emailHeaders
       ];
@@ -122,6 +150,12 @@ export default function ExportarCsv() {
       const rows = activeMovingCompanies.map(e => {
         const pList = phonesByComp.get(e.COD_EMPRESA) || [];
         const eList = emailsByComp.get(e.COD_EMPRESA) || [];
+        const compBilling = billingByComp.get(e.COD_EMPRESA) || {
+          '2026-mar': 0,
+          '2026-abr': 0,
+          '2026-mai': 0,
+          '2026-jun': 0
+        };
 
         const phoneCells = [];
         for (let i = 0; i < maxPhones; i++) {
@@ -159,6 +193,10 @@ export default function ExportarCsv() {
           e.QTD_TITULARES || 0,
           e.QTD_DEPENDENTES || 0,
           e.TOTAL_CARTOES || 0,
+          formatDecimal(compBilling['2026-mar']),
+          formatDecimal(compBilling['2026-abr']),
+          formatDecimal(compBilling['2026-mai']),
+          formatDecimal(compBilling['2026-jun']),
           ...phoneCells,
           ...emailCells
         ];
@@ -252,7 +290,7 @@ export default function ExportarCsv() {
               <div style={{ marginTop: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Colunas incluídas:</span>
                 <code style={{ fontSize: '11px', color: '#475569', wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                  COD_EMPRESA, RAZAO_SOCIAL, NOME_FANTASIA, CNPJ, MUNICIPIO, CONTATOS (TELEFONES E E-MAILS), CARTOES_ATIVOS...
+                  COD_EMPRESA, RAZAO_SOCIAL, NOME_FANTASIA, CNPJ, MUNICIPIO, FATURAMENTO (MARÇO, ABRIL, MAIO, JUNHO), CONTATOS...
                 </code>
               </div>
             </div>
